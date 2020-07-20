@@ -1,168 +1,189 @@
 <template>
   <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-
-      </div>
-
-      <v-spacer></v-spacer>
+    <v-app-bar app dark color="primary">
+      <v-toolbar-title>Chatbot</v-toolbar-title>
     </v-app-bar>
-
-    <v-content>
-      <v-container fluid>
+    <v-main>
+      <v-container class="fill-height" fluid>
         <v-row>
-          <ul>
-            <li v-for="(message, index) in messages.slice(0, next)" v-bind:key="index" :class="message.owner">{{message.text}}</li>
-          </ul>
+          <v-col>
+            <ul class="pa-0">
+              <li v-for="(message, index) in messagesToChat"
+                  :key="index">
+                <span :class="message.owner">
+                  {{ message.text }}
+                </span>
+              </li>
+            </ul>
+          </v-col>
         </v-row>
-        <v-row :style="{position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px', zIndex: 100, background: '#ffffff'}">
-          <v-col cols="12" md="12">
+        <v-row>
+          <v-col>
             <v-textarea
+                    v-model="userMessage"
+                    :disabled="isPossibleToTypeMessage"
                     filled
-                    name="input-7-1"
+                    hide-details
                     label="Type your message"
-                    v-model="input"
             ></v-textarea>
           </v-col>
-          <v-col cols="12" md="12">
-            <div class="my-2">
-              <v-btn @click="send" x-large :style="{position: 'absolute', bottom: 0, right: 0, background: '#56c8d8'}" color="primary" dark>Send Message</v-btn>
-            </div>
+        </v-row>
+        <v-row>
+          <v-col>
+            <v-btn :disabled="isPossibleToSendMessage"
+                   x-large
+                   color="primary"
+                   @click="sendMessage()"
+                   @keyup.meta.enter="sendMessage()"
+            >
+              {{ !currentMessageIndex ? 'Let\'s chat' : 'Send Message' }}
+            </v-btn>
           </v-col>
         </v-row>
       </v-container>
-    </v-content>
+    </v-main>
   </v-app>
 </template>
 
 <script>
-
-export default {
-  name: 'App',
-
-  components: {
-
-  },
-
-  data: () => ({
-    name: '',
-    age: 0,
-    location: '',
-    feeling: '',
-    hobby: '',
-    next: 0,
-    input: '',
-    toChat: [],
-    messages: [
-      {
-        text: "Hi, I'm Peter!",
-        owner: 'him'
-      },
-      {
-        text: "What's your name?",
-        ask: "name",
-        owner: 'him'
-      },
-      {
-        text: "Nice to meet you!",
-        owner: 'him'
-      },
-      {
-        text: "How was your day?",
-        ask: "feeling",
-        owner: 'him'
-      },
-      {
-        text: "Where're you from?",
-        ask: "location",
-        owner: 'him'
-      },
-      {
-        text: "Nice!",
-        owner: 'him'
-      },
-      {
-        text: "How old are you?",
-        ask: "age",
-        owner: 'him'
-      },
-      {
-        text: "What's your favorite hobby?",
-        ask: "hobby",
-        owner: 'him'
-      },
-      {
-        text: "Wow, cool",
-      }
-    ]
-  }),
-  methods: {
-    send() {
-      let active = true
-      while(active) {
-
-        if (typeof this.messages[this.next].ask === 'undefined') {
-          this.next += 1;
-        } else {
-          this.next += 1;
-          if (this.messages[this.next].ask === 'name') {
-            this.name = this.input
-            this.messages.splice(this.next, 0,{
-              text: this.input,
-              owner: 'me'
-            })
+  export default {
+    name: 'App',
+    data() {
+      return {
+        messagesToChat: [],
+        currentMessageIndex: 0,
+        messages: [
+          {
+            text: "Hi, I'm Peter!",
+            owner: 'him'
+          },
+          {
+            text: "What's your name?",
+            ask: "name",
+            owner: 'him'
+          },
+          {
+            text: "Nice to meet you!",
+            owner: 'him'
+          },
+          {
+            text: "How was your day?",
+            ask: "feeling",
+            owner: 'him'
+          },
+          {
+            text: "Where're you from?",
+            ask: "location",
+            owner: 'him'
+          },
+          {
+            text: "Nice!",
+            owner: 'him'
+          },
+          {
+            text: "How old are you?",
+            ask: "age",
+            owner: 'him'
+          },
+          {
+            text: "What's your favorite hobby?",
+            ask: "hobby",
+            owner: 'him'
+          },
+          {
+            text: "Wow, cool",
+            owner: 'him'
           }
-          active = false;
-        }
+        ],
+        userMessage: '',
+        userAnswers: {
+          name: '',
+          age: 0,
+          location: '',
+          feeling: '',
+          hobby: '',
+        },
       }
+    },
+    computed: {
+      currentMessage() {
+        return this.messages[this.currentMessageIndex];
+      },
+      isCurrentMessageLastOne() {
+        return this.currentMessageIndex === this.messages.length - 1;
+      },
+      isPossibleToSendMessage() {
+        // Chat hasn't been started
+        // OR
+        // User input is empty
+        return !!this.currentMessageIndex && !this.userMessage.trim();
+      },
+      isPossibleToTypeMessage() {
+        return !this.currentMessageIndex || this.isCurrentMessageLastOne;
+      }
+    },
+    methods: {
+      sendMessage() {
+        if (this.currentMessage.ask) { // Is current message has question
+          this.userMessage ? this.proceedAnswer() : this.proceedMessageToChat();
+        } else if (!this.isCurrentMessageLastOne) { // If current message NOT the last one
+          this.proceedMessageToChat();
+          this.goToNextMessage();
+        } else {
+          this.proceedMessageToChat();
+        }
+      },
+      proceedAnswer() { // Proceed user answer
+        this.userAnswers[this.currentMessage.ask] = this.userMessage;
+        this.messagesToChat.push({
+          text: this.userMessage,
+          owner: 'me'
+        });
+        this.userMessage = '';
+        this.goToNextMessage();
+      },
+      goToNextMessage() {
+        this.currentMessageIndex += 1;
+        this.sendMessage();
+      },
+      proceedMessageToChat() {
+        this.messagesToChat.push(this.messages[this.currentMessageIndex]);
+      },
     }
-  }
-};
+  };
 </script>
 
 <style>
-  ul{
+  ul {
     list-style: none;
-    margin: 0;
-    padding: 0;
-    position: absolute;
-    left: 0;
-    right: 0;
     overflow-y: scroll;
-    height:600px;
-    z-index: 0;
-    padding-bottom: 100px;
   }
 
-  ul li{
-    display:inline-block;
-    clear: both;
-    padding: 20px;
-    border-radius: 30px;
+  ul li {
+    display: flex;
     margin-bottom: 2px;
     font-family: Helvetica, Arial, sans-serif;
   }
 
-  .him{
-    background: #eee;
-    float: left;
+  ul li span {
+    padding: 20px;
+    border-radius: 30px;
   }
 
-  .me{
-    float: right;
+  .him {
+    background: #EEEEEE;
+  }
+
+  .me {
     background: #0084ff;
-    color: #fff;
+    color: #FFFFFF;
   }
 
-  .him + .me{
+  .him + .me {
     border-bottom-right-radius: 5px;
   }
 
-  .me + .me{
+  .me + .me {
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
   }
