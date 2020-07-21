@@ -1,0 +1,36 @@
+{
+  "messages": [
+    {
+      "text": "Hi, I'm Peter!"
+    },
+    {
+      "text": "What's your name?",
+      "ask": "name"
+    },
+    {
+      "text": "Nice to meet you!"
+    },
+    {
+      "text": "How was your day?",
+      "ask": "feeling"
+    },
+    {
+      "text": "Where're you from?",
+      "ask": "location"
+    },
+    {
+      "text": "Nice!"
+    },
+    {
+      "text": "How old are you?",
+      "ask": "age"
+    },
+    {
+      "text": "What's your favorite hobby?",
+      "ask": "hobby"
+    },
+    {
+      "text": "Wow, cool"
+    }
+  ]
+}

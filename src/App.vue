@@ -4,97 +4,50 @@
       <v-toolbar-title>Chatbot</v-toolbar-title>
     </v-app-bar>
     <v-main>
-      <v-container class="fill-height" fluid>
-        <v-row>
-          <v-col>
-            <ul class="pa-0">
-              <li v-for="(message, index) in messagesToChat"
-                  :key="index">
-                <span :class="message.owner">
-                  {{ message.text }}
-                </span>
-              </li>
-            </ul>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-textarea
-                    v-model="userMessage"
-                    :disabled="isPossibleToTypeMessage"
-                    filled
-                    hide-details
-                    label="Type your message"
-            ></v-textarea>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-btn :disabled="isPossibleToSendMessage"
-                   x-large
-                   color="primary"
-                   @click="sendMessage()"
-                   @keyup.meta.enter="sendMessage()"
-            >
-              {{ !currentMessageIndex ? 'Let\'s chat' : 'Send Message' }}
-            </v-btn>
-          </v-col>
-        </v-row>
+      <v-container class="fill-height align-stretch">
+        <main class="s-main">
+          <div class="s-main__messages" ref="messagesWrapper">
+            <l-messages :messages="messagesToChat"/>
+          </div>
+          <form class="s-main__form pt-3 mt-auto" @submit.prevent="sendMessage()">
+            <div class="s-main__form-field">
+              <v-textarea
+                      v-model="userMessage"
+                      :disabled="isPossibleToTypeMessage"
+                      filled
+                      hide-details
+                      label="Type your message"
+                      @keydown.meta.enter="sendMessage()"
+              />
+            </div>
+            <div class="s-main__form-button mt-3">
+              <v-btn :disabled="isPossibleToSendMessage"
+                     type="submit"
+                     x-large
+                     color="primary"
+              >
+                {{ !currentMessageIndex ? 'Let\'s chat' : 'Send Message' }}
+              </v-btn>
+            </div>
+          </form>
+        </main>
       </v-container>
     </v-main>
   </v-app>
 </template>
 
 <script>
+  import axios from "axios";
+  import LMessages from "@/components/l-messages";
+
   export default {
     name: 'App',
+    components: { LMessages },
     data() {
       return {
         messagesToChat: [],
         currentMessageIndex: 0,
-        messages: [
-          {
-            text: "Hi, I'm Peter!",
-            owner: 'him'
-          },
-          {
-            text: "What's your name?",
-            ask: "name",
-            owner: 'him'
-          },
-          {
-            text: "Nice to meet you!",
-            owner: 'him'
-          },
-          {
-            text: "How was your day?",
-            ask: "feeling",
-            owner: 'him'
-          },
-          {
-            text: "Where're you from?",
-            ask: "location",
-            owner: 'him'
-          },
-          {
-            text: "Nice!",
-            owner: 'him'
-          },
-          {
-            text: "How old are you?",
-            ask: "age",
-            owner: 'him'
-          },
-          {
-            text: "What's your favorite hobby?",
-            ask: "hobby",
-            owner: 'him'
-          },
-          {
-            text: "Wow, cool",
-            owner: 'him'
-          }
-        ],
+        messages: [],
         userMessage: '',
         userAnswers: {
           name: '',
@@ -122,6 +75,22 @@
         return !this.currentMessageIndex || this.isCurrentMessageLastOne;
       }
     },
+    watch: {
+      messagesToChat() {
+        this.$nextTick(function () {
+          const messagesWrapper = this.$refs.messagesWrapper;
+
+          messagesWrapper.scrollTop = messagesWrapper.scrollHeight;
+        });
+      }
+    },
+    created() {
+      axios.get('messages.json')
+        .then(({ data }) => data.messages)
+        .then((messages) => {
+          this.messages = messages.map((msg) => ({ ...msg, "owner": "_bot" }))
+        })
+    },
     methods: {
       sendMessage() {
         if (this.currentMessage.ask) { // Is current message has question
@@ -137,7 +106,7 @@
         this.userAnswers[this.currentMessage.ask] = this.userMessage;
         this.messagesToChat.push({
           text: this.userMessage,
-          owner: 'me'
+          owner: '_me'
         });
         this.userMessage = '';
         this.goToNextMessage();
@@ -153,42 +122,28 @@
   };
 </script>
 
-<style>
-  ul {
-    list-style: none;
-    overflow-y: scroll;
-  }
-
-  ul li {
+<style lang="scss">
+  .s-main {
+    width: 100%;
     display: flex;
-    margin-bottom: 2px;
-    font-family: Helvetica, Arial, sans-serif;
-  }
+    flex-direction: column;
 
-  ul li span {
-    padding: 20px;
-    border-radius: 30px;
-  }
+    &__messages {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 64px - 24px - 240px); // header - container padding - form height
+      overflow-y: scroll;
+    }
 
-  .him {
-    background: #EEEEEE;
-  }
+    &__form {
+      flex-shrink: 0;
 
-  .me {
-    background: #0084ff;
-    color: #FFFFFF;
-  }
-
-  .him + .me {
-    border-bottom-right-radius: 5px;
-  }
-
-  .me + .me {
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
-  }
-
-  .me:last-of-type {
-    border-bottom-right-radius: 30px;
+      &-button {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+      }
+    }
   }
 </style>
